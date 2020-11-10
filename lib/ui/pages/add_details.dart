@@ -22,6 +22,7 @@ class SignupView extends StatefulWidget {
 class _SignupViewState extends State<SignupView> {
   final _name = TextEditingController();
   final _pincode = TextEditingController();
+  final _age = TextEditingController();
   // ignore: deprecated_member_use
   final databaseReference = Firestore.instance;
   FlutterToast flutterToast;
@@ -29,6 +30,7 @@ class _SignupViewState extends State<SignupView> {
   bool loading = false;
   bool _invalidName = false;
   bool _invalidPinCode = false;
+  bool _invalidage = false;
   var pinlocation;
 
   @override
@@ -37,6 +39,7 @@ class _SignupViewState extends State<SignupView> {
 
     _name.dispose();
     _pincode.dispose();
+    _age.dispose();
 
     super.dispose();
   }
@@ -72,23 +75,25 @@ class _SignupViewState extends State<SignupView> {
       var addresses =
           await Geocoder.local.findAddressesFromQuery('India,' + _pincode.text);
       var address = addresses.first;
-      String locality = address.locality;
-      String postalCode = address.postalCode;
 
-      await databaseReference.collection("Users").document(id).setData({
+      await databaseReference.collection("Users").doc(id).set({
         'Name': _name.text.toString(),
         'PinCode': _pincode.text.toString(),
-        'Address': "${address.addressLine}, ${address.subAdminArea}",
+        'Address':
+            " ${address.locality}, ${address.subAdminArea}, ${address.postalCode}, ${address.adminArea}, ${address.countryName}",
+        'Age': _age.text.toString(),
+        'Coordinates': "${address.coordinates}",
       });
 
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => AddSkillsView()),
+        MaterialPageRoute(builder: (context) => AddSkillsView(id: id)),
       );
     } catch (e) {
       setState(() {
         loading = false;
       });
+      print(e);
     }
   }
 
@@ -145,6 +150,18 @@ class _SignupViewState extends State<SignupView> {
                           ),
                         ),
                         SizedBox(
+                          height: 10.0,
+                        ),
+                        TextFieldWidget(
+                          controller: _age,
+                          hintText: 'Age',
+                          textColor: Colors.black,
+                          obscureText: false,
+                          prefixIconData: Icons.calendar_today_rounded,
+                          maxlength: 2,
+                          errortext: _invalidage ? "Invalid Age!" : null,
+                        ),
+                        SizedBox(
                           height: 40.0,
                         ),
                         Column(
@@ -160,6 +177,8 @@ class _SignupViewState extends State<SignupView> {
                                         .hasMatch(_name.text);
                                     _invalidPinCode = !RegExp(r"^[0-9]{6}$")
                                         .hasMatch(_pincode.text);
+                                    _invalidage = !RegExp(r"^[0-9]{2}$")
+                                        .hasMatch(_age.text);
                                   });
 
                                   try {
@@ -173,7 +192,9 @@ class _SignupViewState extends State<SignupView> {
                                     });
                                   }
 
-                                  if (!_invalidName) {
+                                  if (!_invalidName &&
+                                      !_invalidPinCode &&
+                                      !_invalidage) {
                                     setState(() {
                                       loading = true;
                                     });
@@ -202,3 +223,5 @@ class _SignupViewState extends State<SignupView> {
           );
   }
 }
+
+class $ {}
